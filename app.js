@@ -90,12 +90,17 @@ function renderSelected() {
     const row = document.createElement("div");
     row.className = "selected-item";
     row.innerHTML = `
-      <div>
-        <div class="selected-title">${recipe.name}</div>
+      <div class="selected-main">
+        <div class="selected-title-row">
+          <div class="selected-title">${recipe.name}</div>
+          <button type="button" class="remove-btn" aria-label="Odstrániť">×</button>
+        </div>
         <span class="selected-meta">${selectedMeta(recipe)}</span>
       </div>
-      <input type="number" min="0" step="1" value="${people}" aria-label="Počet ľudí pre ${recipe.name}">
-      <button type="button" class="remove-btn" aria-label="Odstrániť">×</button>
+      <label class="people-field">
+        <span>Počet ľudí</span>
+        <input type="number" min="0" step="1" value="${people}" aria-label="Počet ľudí pre ${recipe.name}">
+      </label>
     `;
     const input = row.querySelector("input");
     input.addEventListener("input", () => {
