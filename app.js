@@ -48,6 +48,9 @@ function renderResults() {
   const query = elements.search.value.trim().toLocaleLowerCase("sk");
   const isMobile = window.matchMedia("(max-width: 640px)").matches;
   const minimumMobileQueryLength = 2;
+  const desktopInitialLimit = 12;
+  const desktopSearchLimit = 18;
+  const mobileSearchLimit = 10;
 
   if (isMobile && query.length < minimumMobileQueryLength) {
     elements.results.innerHTML = "";
@@ -60,12 +63,13 @@ function renderResults() {
       const haystack = `${recipe.name} ${recipe.recipeCode || ""}`.toLocaleLowerCase("sk");
       return !query || haystack.includes(query);
     });
-  const visibleRecipes = isMobile ? recipes.slice(0, 10) : recipes;
+  const limit = isMobile ? mobileSearchLimit : query ? desktopSearchLimit : desktopInitialLimit;
+  const visibleRecipes = recipes.slice(0, limit);
 
   elements.results.innerHTML = "";
   elements.resultCount.textContent = query
-    ? `Nájdené jedlá: ${recipes.length} z ${state.recipes.length}${isMobile && recipes.length > visibleRecipes.length ? " | zobrazených 10" : ""}`
-    : `Všetky jedlá: ${state.recipes.length}`;
+    ? `Nájdené jedlá: ${recipes.length} z ${state.recipes.length}${recipes.length > visibleRecipes.length ? ` | zobrazených ${visibleRecipes.length}` : ""}`
+    : `Všetky jedlá: ${state.recipes.length} | zobrazených ${visibleRecipes.length}`;
   visibleRecipes.forEach((recipe) => {
     const button = document.createElement("button");
     button.type = "button";
