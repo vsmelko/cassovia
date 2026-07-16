@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cassovia recepty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="toolbar">
+        <div>
+          <p class="eyebrow">Cassovia</p>
+          <h1>Prepočet jedál a surovín</h1>
+        </div>
+        <div class="stats" id="stats">Načítavam dáta...</div>
+      </section>
+
+      <section class="search-panel">
+        <label for="recipeSearch">Jedlo</label>
+        <input id="recipeSearch" type="search" autocomplete="off" placeholder="Začni písať názov jedla alebo číslo receptu">
+        <div class="result-count" id="resultCount"></div>
+        <div class="results" id="results"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="selected-panel">
+          <div class="panel-heading">
+            <h2>Jedlá a počty ľudí</h2>
+            <button id="clearAll" type="button">Vyčistiť</button>
+          </div>
+          <div class="selected-list" id="selectedList"></div>
+        </div>
+
+        <div class="shopping-panel">
+          <div class="panel-heading">
+            <h2>Celkové množstvá surovín</h2>
+            <button id="copyList" type="button">Kopírovať</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Potravina</th>
+                  <th>Množstvo</th>
+                  <th>Jednotka</th>
+                </tr>
+              </thead>
+              <tbody id="shoppingBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="data/recipes.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
