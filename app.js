@@ -11,7 +11,6 @@ const elements = {
   selectedList: document.querySelector("#selectedList"),
   shoppingBody: document.querySelector("#shoppingBody"),
   clearAll: document.querySelector("#clearAll"),
-  copyList: document.querySelector("#copyList"),
   printList: document.querySelector("#printList"),
   excelList: document.querySelector("#excelList"),
 };
@@ -150,13 +149,6 @@ function renderShopping() {
   });
 }
 
-function copyShoppingList() {
-  const text = collectShoppingList()
-    .map((item) => `${item.name}\t${formatAmount(item.amount)}\t${item.unit}`)
-    .join("\n");
-  navigator.clipboard.writeText(text);
-}
-
 function printShoppingList() {
   window.print();
 }
@@ -203,7 +195,6 @@ elements.clearAll.addEventListener("click", () => {
   renderSelected();
   renderShopping();
 });
-elements.copyList.addEventListener("click", copyShoppingList);
 elements.printList.addEventListener("click", printShoppingList);
 elements.excelList.addEventListener("click", saveShoppingListForExcel);
 

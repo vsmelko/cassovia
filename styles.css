@@ -237,7 +237,7 @@ button:hover {
   transform: translateY(-1px);
 }
 
-#copyList {
+#excelList {
   border-color: var(--accent-dark);
   background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: #fff;
