@@ -561,6 +561,7 @@ tbody tr:hover {
 
 @media print {
   @page {
+    size: A4 landscape;
     margin: 14mm;
   }
 
@@ -621,15 +622,12 @@ tbody tr:hover {
     font-size: 16px;
   }
 
-  .export-meals-table {
+  .export-matrix-table {
     margin-bottom: 16px;
   }
 
   .table-wrap {
-    max-height: none;
-    overflow: visible;
-    border: 0;
-    box-shadow: none;
+    display: none;
   }
 
   table,
@@ -644,7 +642,7 @@ tbody tr:hover {
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 9px;
   }
 
   thead {
@@ -661,7 +659,24 @@ tbody tr:hover {
   th,
   td {
     border: 1px solid var(--line);
-    padding: 7px 8px;
+    padding: 5px 6px;
+    vertical-align: top;
+  }
+
+  th:first-child,
+  td:first-child {
+    width: 22%;
+  }
+
+  th:nth-last-child(2),
+  td:nth-last-child(2) {
+    font-weight: 700;
+    text-align: right;
+  }
+
+  th:last-child,
+  td:last-child {
+    width: 55px;
   }
 
   td::before {

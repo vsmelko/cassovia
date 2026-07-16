@@ -47,11 +47,22 @@ function removeRecipe(id) {
 }
 
 function getSelectedMeals() {
-  return [...state.selected.values()].map(({ recipe, people }) => ({
+  return [...state.selected.values()].map(({ recipe, people }, index) => ({
+    id: `${recipe.id}-${index}`,
     name: recipe.name,
     people,
     recipeCode: recipe.recipeCode || "",
+    ingredients: recipe.ingredients,
   }));
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function renderResults() {
@@ -127,28 +138,42 @@ function renderSelected() {
 }
 
 function renderExportSummary() {
-  const meals = getSelectedMeals();
-  if (!meals.length) {
+  const matrix = collectExportMatrix();
+  if (!matrix.meals.length) {
     elements.exportSummary.innerHTML = "";
     return;
   }
 
   elements.exportSummary.innerHTML = `
-    <h3>Vybrané jedlá</h3>
-    <table class="export-meals-table">
+    <h3>Výdaj surovín podľa jedál</h3>
+    <table class="export-matrix-table">
       <thead>
         <tr>
-          <th>Jedlo</th>
+          <th>Potravina</th>
+          ${matrix.meals.map((meal) => `<th>${escapeHtml(meal.name)}</th>`).join("")}
+          <th>Spolu</th>
+          <th>Jednotka</th>
+        </tr>
+        <tr>
           <th>Počet ľudí</th>
+          ${matrix.meals.map((meal) => `<th>${escapeHtml(meal.people)}</th>`).join("")}
+          <th></th>
+          <th></th>
+        </tr>
+        <tr>
           <th>Strana receptu</th>
+          ${matrix.meals.map((meal) => `<th>${escapeHtml(meal.recipeCode || "-")}</th>`).join("")}
+          <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
-        ${meals.map((meal) => `
+        ${matrix.rows.map((row) => `
           <tr>
-            <td>${meal.name}</td>
-            <td>${meal.people}</td>
-            <td>${meal.recipeCode || "-"}</td>
+            <td>${escapeHtml(row.name)}</td>
+            ${row.mealAmounts.map((amount) => `<td>${amount ? escapeHtml(formatAmount(amount)) : ""}</td>`).join("")}
+            <td>${escapeHtml(formatAmount(row.total))}</td>
+            <td>${escapeHtml(row.unit)}</td>
           </tr>
         `).join("")}
       </tbody>
@@ -167,6 +192,32 @@ function collectShoppingList() {
     });
   });
   return [...totals.values()].sort((a, b) => a.name.localeCompare(b.name, "sk"));
+}
+
+function collectExportMatrix() {
+  const meals = getSelectedMeals();
+  const rowMap = new Map();
+
+  meals.forEach((meal, mealIndex) => {
+    meal.ingredients.forEach((ingredient) => {
+      const key = `${ingredient.name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
+      const row = rowMap.get(key) || {
+        name: ingredient.name,
+        unit: ingredient.unit,
+        mealAmounts: Array(meals.length).fill(0),
+        total: 0,
+      };
+      const amount = ingredient.perPerson * meal.people;
+      row.mealAmounts[mealIndex] += amount;
+      row.total += amount;
+      rowMap.set(key, row);
+    });
+  });
+
+  return {
+    meals,
+    rows: [...rowMap.values()].sort((a, b) => a.name.localeCompare(b.name, "sk")),
+  };
 }
 
 function renderShopping() {
@@ -199,16 +250,18 @@ function escapeCsvValue(value) {
 }
 
 function saveShoppingListForExcel() {
-  const rows = collectShoppingList();
-  const meals = getSelectedMeals();
+  const matrix = collectExportMatrix();
   const lines = [
-    ["Vybrané jedlá"],
-    ["Jedlo", "Počet ľudí", "Strana receptu"],
-    ...meals.map((meal) => [meal.name, meal.people, meal.recipeCode || "-"]),
+    ["Potravina", ...matrix.meals.map((meal) => meal.name), "Spolu", "Jednotka"],
+    ["Počet ľudí", ...matrix.meals.map((meal) => meal.people), "", ""],
+    ["Strana receptu", ...matrix.meals.map((meal) => meal.recipeCode || "-"), "", ""],
     [],
-    ["Celkové množstvá surovín"],
-    ["Potravina", "Množstvo", "Jednotka"],
-    ...rows.map((item) => [item.name, formatAmount(item.amount), item.unit]),
+    ...matrix.rows.map((row) => [
+      row.name,
+      ...row.mealAmounts.map((amount) => amount ? formatAmount(amount) : ""),
+      formatAmount(row.total),
+      row.unit,
+    ]),
   ];
   const csv = lines.map((line) => line.map(escapeCsvValue).join(";")).join("\r\n");
   const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
