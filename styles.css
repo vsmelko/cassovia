@@ -313,6 +313,10 @@ button:hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+.export-summary {
+  display: none;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -604,6 +608,21 @@ tbody tr:hover {
 
   .shopping-panel h2 {
     font-size: 22px;
+    margin-bottom: 14px;
+  }
+
+  .export-summary {
+    display: block;
+    margin-bottom: 18px;
+  }
+
+  .export-summary h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+  }
+
+  .export-meals-table {
+    margin-bottom: 16px;
   }
 
   .table-wrap {

@@ -9,6 +9,7 @@ const elements = {
   resultCount: document.querySelector("#resultCount"),
   results: document.querySelector("#results"),
   selectedList: document.querySelector("#selectedList"),
+  exportSummary: document.querySelector("#exportSummary"),
   shoppingBody: document.querySelector("#shoppingBody"),
   clearAll: document.querySelector("#clearAll"),
   printList: document.querySelector("#printList"),
@@ -43,6 +44,14 @@ function removeRecipe(id) {
   state.selected.delete(id);
   renderSelected();
   renderShopping();
+}
+
+function getSelectedMeals() {
+  return [...state.selected.values()].map(({ recipe, people }) => ({
+    name: recipe.name,
+    people,
+    recipeCode: recipe.recipeCode || "",
+  }));
 }
 
 function renderResults() {
@@ -117,6 +126,36 @@ function renderSelected() {
   });
 }
 
+function renderExportSummary() {
+  const meals = getSelectedMeals();
+  if (!meals.length) {
+    elements.exportSummary.innerHTML = "";
+    return;
+  }
+
+  elements.exportSummary.innerHTML = `
+    <h3>Vybrané jedlá</h3>
+    <table class="export-meals-table">
+      <thead>
+        <tr>
+          <th>Jedlo</th>
+          <th>Počet ľudí</th>
+          <th>Strana receptu</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${meals.map((meal) => `
+          <tr>
+            <td>${meal.name}</td>
+            <td>${meal.people}</td>
+            <td>${meal.recipeCode || "-"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
 function collectShoppingList() {
   const totals = new Map();
   state.selected.forEach(({ recipe, people }) => {
@@ -131,6 +170,7 @@ function collectShoppingList() {
 }
 
 function renderShopping() {
+  renderExportSummary();
   const rows = collectShoppingList();
   elements.shoppingBody.innerHTML = "";
   if (!rows.length) {
@@ -160,7 +200,13 @@ function escapeCsvValue(value) {
 
 function saveShoppingListForExcel() {
   const rows = collectShoppingList();
+  const meals = getSelectedMeals();
   const lines = [
+    ["Vybrané jedlá"],
+    ["Jedlo", "Počet ľudí", "Strana receptu"],
+    ...meals.map((meal) => [meal.name, meal.people, meal.recipeCode || "-"]),
+    [],
+    ["Celkové množstvá surovín"],
     ["Potravina", "Množstvo", "Jednotka"],
     ...rows.map((item) => [item.name, formatAmount(item.amount), item.unit]),
   ];
