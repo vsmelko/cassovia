@@ -13,6 +13,7 @@ const elements = {
   clearAll: document.querySelector("#clearAll"),
   copyList: document.querySelector("#copyList"),
   printList: document.querySelector("#printList"),
+  excelList: document.querySelector("#excelList"),
 };
 
 function formatAmount(value) {
@@ -160,6 +161,29 @@ function printShoppingList() {
   window.print();
 }
 
+function escapeCsvValue(value) {
+  const text = String(value).replace(/"/g, '""');
+  return /[;"\n\r]/.test(text) ? `"${text}"` : text;
+}
+
+function saveShoppingListForExcel() {
+  const rows = collectShoppingList();
+  const lines = [
+    ["Potravina", "Množstvo", "Jednotka"],
+    ...rows.map((item) => [item.name, formatAmount(item.amount), item.unit]),
+  ];
+  const csv = lines.map((line) => line.map(escapeCsvValue).join(";")).join("\r\n");
+  const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "celkove-suroviny.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function loadData() {
   const payload = window.RECIPE_DATA;
   if (!payload) {
@@ -181,6 +205,7 @@ elements.clearAll.addEventListener("click", () => {
 });
 elements.copyList.addEventListener("click", copyShoppingList);
 elements.printList.addEventListener("click", printShoppingList);
+elements.excelList.addEventListener("click", saveShoppingListForExcel);
 
 loadData().catch((error) => {
   elements.stats.textContent = "Dáta sa nepodarilo načítať";
