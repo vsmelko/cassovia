@@ -161,7 +161,7 @@ async function loadData() {
     throw new Error("Missing recipe data");
   }
   state.recipes = payload.recipes;
-  elements.stats.textContent = `${payload.fileCount} Excelov | ${payload.recipes.length} jedál`;
+  elements.stats.textContent = `${payload.recipes.length} jedál`;
   renderResults();
   renderSelected();
   renderShopping();
