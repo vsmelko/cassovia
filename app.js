@@ -12,6 +12,7 @@ const elements = {
   shoppingBody: document.querySelector("#shoppingBody"),
   clearAll: document.querySelector("#clearAll"),
   copyList: document.querySelector("#copyList"),
+  printList: document.querySelector("#printList"),
 };
 
 function formatAmount(value) {
@@ -155,6 +156,10 @@ function copyShoppingList() {
   navigator.clipboard.writeText(text);
 }
 
+function printShoppingList() {
+  window.print();
+}
+
 async function loadData() {
   const payload = window.RECIPE_DATA;
   if (!payload) {
@@ -175,6 +180,7 @@ elements.clearAll.addEventListener("click", () => {
   renderShopping();
 });
 elements.copyList.addEventListener("click", copyShoppingList);
+elements.printList.addEventListener("click", printShoppingList);
 
 loadData().catch((error) => {
   elements.stats.textContent = "Dáta sa nepodarilo načítať";

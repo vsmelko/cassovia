@@ -220,6 +220,13 @@ input[type="number"]:focus {
   margin-bottom: 14px;
 }
 
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 button {
   min-height: 36px;
   border: 1px solid var(--line);
@@ -504,6 +511,10 @@ tbody tr:hover {
     min-width: 88px;
   }
 
+  .panel-actions {
+    justify-content: flex-start;
+  }
+
   .selected-item {
     grid-template-columns: 1fr;
   }
@@ -549,5 +560,100 @@ tbody tr:hover {
     padding-left: 4px;
     white-space: nowrap;
     text-align: left;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  :root {
+    --text: #111;
+    --muted: #444;
+    --line: #c8c8c8;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  .app-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  .toolbar,
+  .search-panel,
+  .selected-panel,
+  .panel-actions,
+  .shopping-panel::before {
+    display: none;
+  }
+
+  .workspace,
+  .shopping-panel {
+    display: block;
+    margin: 0;
+  }
+
+  .shopping-panel {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .shopping-panel .panel-heading {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .shopping-panel h2 {
+    font-size: 22px;
+  }
+
+  .table-wrap {
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td {
+    display: revert;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead {
+    position: static;
+    display: table-header-group;
+    background: #f1f1f1;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  th,
+  td {
+    border: 1px solid var(--line);
+    padding: 7px 8px;
+  }
+
+  td::before {
+    content: none !important;
   }
 }
