@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260717-10">
+    <link rel="stylesheet" href="styles.css?v=20260717-11">
   </head>
   <body>
     <main class="app-shell">
@@ -45,22 +45,18 @@
                 <span>Názov receptu</span>
                 <input id="recipeName" type="text" autocomplete="off" required>
               </label>
-              <label>
-                <span>Strana</span>
-                <input id="recipeCode" type="text" autocomplete="off">
-              </label>
-              <label>
-                <span>Základ porcií</span>
-                <input id="recipePortions" type="number" min="1" step="1" value="1" required>
-              </label>
-            </div>
+            <label>
+              <span>Strana</span>
+              <input id="recipeCode" type="text" autocomplete="off">
+            </label>
+          </div>
             <div class="ingredients-heading">
               <span>Suroviny</span>
               <button id="addIngredient" type="button">Pridať surovinu</button>
             </div>
             <div class="ingredient-grid-head">
               <span>Surovina</span>
-              <span>Množstvo</span>
+              <span>Množstvo na 1 porciu</span>
               <span>Jednotka</span>
               <span></span>
             </div>
@@ -106,7 +102,7 @@
       </section>
     </main>
 
-    <script src="data/recipes.js?v=20260717-10"></script>
-    <script src="app.js?v=20260717-10"></script>
+    <script src="data/recipes.js?v=20260717-11"></script>
+    <script src="app.js?v=20260717-11"></script>
   </body>
 </html>

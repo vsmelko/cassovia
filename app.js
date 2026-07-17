@@ -26,7 +26,6 @@ const elements = {
   recipeId: document.querySelector("#recipeId"),
   recipeName: document.querySelector("#recipeName"),
   recipeCode: document.querySelector("#recipeCode"),
-  recipePortions: document.querySelector("#recipePortions"),
   ingredientRows: document.querySelector("#ingredientRows"),
   addIngredient: document.querySelector("#addIngredient"),
   cancelRecipeEdit: document.querySelector("#cancelRecipeEdit"),
@@ -390,7 +389,6 @@ function resetRecipeForm() {
   elements.recipeId.value = "";
   elements.recipeFormTitle.textContent = "Nový recept";
   elements.ingredientRows.innerHTML = "";
-  elements.recipePortions.value = "1";
   addIngredientFormRow();
 }
 
@@ -417,13 +415,12 @@ function startRecipeEdit(recipe) {
   elements.recipeId.value = recipe.id;
   elements.recipeName.value = recipe.name;
   elements.recipeCode.value = recipe.recipeCode || "";
-  elements.recipePortions.value = recipe.basePortions || 1;
   elements.cancelRecipeEdit.hidden = false;
   elements.ingredientRows.innerHTML = "";
   recipe.ingredients.forEach((ingredient) => {
     addIngredientFormRow({
       name: ingredient.name,
-      amount: ingredient.amount || ingredient.perPerson * (recipe.basePortions || 1),
+      amount: ingredient.perPerson,
       unit: ingredient.unit,
     });
   });
@@ -431,7 +428,6 @@ function startRecipeEdit(recipe) {
 }
 
 function collectRecipeFormData() {
-  const basePortions = Math.max(1, normalizeAmount(elements.recipePortions.value));
   const ingredients = [...elements.ingredientRows.querySelectorAll(".ingredient-form-row")]
     .map((row) => {
       const name = row.querySelector(".ingredient-name").value.trim();
@@ -440,7 +436,7 @@ function collectRecipeFormData() {
       return {
         name,
         amount,
-        perPerson: amount / basePortions,
+        perPerson: amount,
         unit,
       };
     })
@@ -449,7 +445,7 @@ function collectRecipeFormData() {
   return {
     id: elements.recipeId.value || createId(elements.recipeName.value),
     name: elements.recipeName.value.trim(),
-    basePortions,
+    basePortions: 1,
     recipeCode: elements.recipeCode.value.trim(),
     netto: "",
     source: { source: "Vlastné" },
