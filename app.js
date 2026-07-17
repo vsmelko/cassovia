@@ -268,7 +268,11 @@ function renderExportSummary() {
     return;
   }
 
-  elements.exportSummary.innerHTML = `
+  elements.exportSummary.innerHTML = buildExportMatrixHtml(matrix);
+}
+
+function buildExportMatrixHtml(matrix) {
+  return `
     <h3>Výdaj surovín podľa jedál</h3>
     <table class="export-matrix-table">
       <thead>
@@ -482,31 +486,35 @@ function printShoppingList() {
   window.print();
 }
 
-function escapeCsvValue(value) {
-  const text = String(value).replace(/"/g, '""');
-  return /[;"\n\r]/.test(text) ? `"${text}"` : text;
-}
-
 function saveShoppingListForExcel() {
   const matrix = collectExportMatrix();
-  const lines = [
-    ["Potravina", ...matrix.meals.map((meal) => meal.name), "Spolu", "Jednotka"],
-    ["Porcie/osoby", ...matrix.meals.map((meal) => meal.people), "", ""],
-    ["Strana", ...matrix.meals.map((meal) => meal.recipeCode || "-"), "", ""],
-    [],
-    ...matrix.rows.map((row) => [
-      row.name,
-      ...row.mealAmounts.map((amount) => amount ? formatAmount(amount) : ""),
-      formatAmount(row.total),
-      row.unit,
-    ]),
-  ];
-  const csv = lines.map((line) => line.map(escapeCsvValue).join(";")).join("\r\n");
-  const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+  if (!matrix.meals.length) return;
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, Helvetica, sans-serif; }
+          h3 { margin: 0 0 10px; font-size: 16px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #c8c8c8; padding: 6px 8px; vertical-align: top; }
+          th { background: #f1f1f1; font-weight: 700; text-align: left; }
+          td { mso-number-format:"\\@"; }
+          th:nth-last-child(2), td:nth-last-child(2) { font-weight: 700; text-align: right; }
+        </style>
+      </head>
+      <body>
+        ${buildExportMatrixHtml(matrix)}
+      </body>
+    </html>
+  `;
+  const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "celkove-suroviny.csv";
+  link.download = "vydaj-surovin.xls";
   document.body.appendChild(link);
   link.click();
   link.remove();
