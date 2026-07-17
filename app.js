@@ -19,6 +19,8 @@ const elements = {
   clearAll: document.querySelector("#clearAll"),
   printList: document.querySelector("#printList"),
   excelList: document.querySelector("#excelList"),
+  openRecipeForm: document.querySelector("#openRecipeForm"),
+  recipeEditor: document.querySelector("#recipeEditor"),
   recipeForm: document.querySelector("#recipeForm"),
   recipeFormTitle: document.querySelector("#recipeFormTitle"),
   recipeId: document.querySelector("#recipeId"),
@@ -387,10 +389,26 @@ function resetRecipeForm() {
   elements.recipeForm.reset();
   elements.recipeId.value = "";
   elements.recipeFormTitle.textContent = "Nový recept";
-  elements.cancelRecipeEdit.hidden = true;
   elements.ingredientRows.innerHTML = "";
   elements.recipePortions.value = "1";
   addIngredientFormRow();
+}
+
+function openRecipeEditor() {
+  elements.recipeEditor.hidden = false;
+  document.body.classList.add("modal-open");
+  window.setTimeout(() => elements.recipeName.focus(), 0);
+}
+
+function closeRecipeEditor() {
+  elements.recipeEditor.hidden = true;
+  document.body.classList.remove("modal-open");
+  resetRecipeForm();
+}
+
+function openNewRecipeForm() {
+  resetRecipeForm();
+  openRecipeEditor();
 }
 
 function startRecipeEdit(recipe) {
@@ -409,7 +427,7 @@ function startRecipeEdit(recipe) {
       unit: ingredient.unit,
     });
   });
-  elements.recipeName.focus();
+  openRecipeEditor();
 }
 
 function collectRecipeFormData() {
@@ -462,7 +480,7 @@ function saveRecipe(event) {
   refreshRecipes();
   updateStats();
   renderResults();
-  resetRecipeForm();
+  closeRecipeEditor();
 }
 
 function printShoppingList() {
@@ -524,9 +542,16 @@ elements.clearAll.addEventListener("click", () => {
 });
 elements.printList.addEventListener("click", printShoppingList);
 elements.excelList.addEventListener("click", saveShoppingListForExcel);
+elements.openRecipeForm.addEventListener("click", openNewRecipeForm);
 elements.recipeForm.addEventListener("submit", saveRecipe);
 elements.addIngredient.addEventListener("click", () => addIngredientFormRow());
-elements.cancelRecipeEdit.addEventListener("click", resetRecipeForm);
+elements.cancelRecipeEdit.addEventListener("click", closeRecipeEditor);
+elements.recipeEditor.addEventListener("click", (event) => {
+  if (event.target === elements.recipeEditor) closeRecipeEditor();
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.recipeEditor.hidden) closeRecipeEditor();
+});
 
 loadData().catch((error) => {
   elements.stats.textContent = "Dáta sa nepodarilo načítať";

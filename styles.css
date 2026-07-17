@@ -34,6 +34,10 @@ body {
   color: var(--text);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input {
   font: inherit;
@@ -102,6 +106,12 @@ h2 {
 .search-panel {
   margin-top: 18px;
   padding: 20px;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 label {
@@ -219,8 +229,29 @@ input[type="text"]:focus {
 }
 
 .recipe-editor-panel {
-  margin-top: 18px;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.recipe-editor-panel[hidden] {
+  display: none;
+}
+
+.recipe-editor-dialog {
+  width: min(980px, 100%);
+  max-height: min(86vh, 820px);
+  overflow: auto;
   padding: 20px;
+  background: var(--surface);
+  border: 1px solid rgba(215, 222, 226, 0.95);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
 }
 
 .recipe-form {
@@ -519,9 +550,17 @@ tbody tr:hover {
   }
 
   .search-panel,
-  .recipe-editor-panel,
   .selected-panel,
   .shopping-panel {
+    padding: 14px;
+  }
+
+  .recipe-editor-panel {
+    padding: 10px;
+  }
+
+  .recipe-editor-dialog {
+    max-height: calc(100vh - 20px);
     padding: 14px;
   }
 
@@ -664,6 +703,10 @@ tbody tr:hover {
   }
 
   .panel-actions {
+    justify-content: flex-start;
+  }
+
+  .search-actions {
     justify-content: flex-start;
   }
 
