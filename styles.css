@@ -629,9 +629,29 @@ tbody tr:hover {
 
   .recipe-fields,
   .ingredient-grid-head,
-  .ingredient-form-row,
-  .temporary-row {
+  .ingredient-form-row {
     grid-template-columns: 1fr;
+  }
+
+  .temporary-row {
+    grid-template-columns: minmax(0, 1fr) 82px 54px 30px;
+    gap: 5px;
+  }
+
+  .temporary-row input {
+    min-height: 36px;
+    min-width: 0;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+
+  .temporary-row .remove-small {
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .temporary-row .ingredient-suggestion-menu {
+    width: min(260px, calc(100vw - 44px));
   }
 
   .ingredient-grid-head {
@@ -761,6 +781,21 @@ tbody tr:hover {
   .ingredients-heading {
     display: grid;
     align-items: start;
+  }
+
+  .temporary-row {
+    grid-template-columns: minmax(0, 1fr) 74px 46px 28px;
+    gap: 4px;
+  }
+
+  .temporary-row input {
+    padding: 6px 6px;
+    font-size: 12px;
+  }
+
+  .temporary-row .remove-small {
+    min-width: 28px;
+    min-height: 28px;
   }
 
   .selected-item {
