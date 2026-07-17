@@ -27,6 +27,7 @@ const elements = {
   recipeName: document.querySelector("#recipeName"),
   recipeCode: document.querySelector("#recipeCode"),
   ingredientRows: document.querySelector("#ingredientRows"),
+  ingredientSuggestions: document.querySelector("#ingredientSuggestions"),
   addIngredient: document.querySelector("#addIngredient"),
   cancelRecipeEdit: document.querySelector("#cancelRecipeEdit"),
 };
@@ -77,6 +78,24 @@ function refreshRecipes() {
     .map((recipe) => customById.get(recipe.id) || recipe)
     .concat(state.customRecipes.filter((recipe) => !state.baseRecipes.some((base) => base.id === recipe.id)))
     .sort((a, b) => a.name.localeCompare(b.name, "sk"));
+  renderIngredientSuggestions();
+}
+
+function renderIngredientSuggestions() {
+  const names = new Map();
+  state.recipes.forEach((recipe) => {
+    recipe.ingredients.forEach((ingredient) => {
+      const name = ingredient.name?.trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase("sk");
+      if (!names.has(key)) names.set(key, name);
+    });
+  });
+
+  elements.ingredientSuggestions.innerHTML = [...names.values()]
+    .sort((a, b) => a.localeCompare(b, "sk"))
+    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+    .join("");
 }
 
 function loadCustomRecipes() {
@@ -222,7 +241,7 @@ function renderTemporaryIngredientRows(container, selectedEntry) {
     const row = document.createElement("div");
     row.className = "temporary-row";
     row.innerHTML = `
-      <input type="text" value="${escapeHtml(ingredient.name)}" aria-label="Potravina">
+      <input type="text" list="ingredientSuggestions" value="${escapeHtml(ingredient.name)}" aria-label="Potravina">
       <input type="number" min="0" step="0.001" value="${ingredient.perPerson}" aria-label="Množstvo na 1 porciu">
       <input type="text" value="${escapeHtml(ingredient.unit)}" aria-label="Jednotka">
       <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
@@ -374,7 +393,7 @@ function addIngredientFormRow(ingredient = {}) {
   const row = document.createElement("div");
   row.className = "ingredient-form-row";
   row.innerHTML = `
-    <input type="text" class="ingredient-name" value="${escapeHtml(ingredient.name || "")}" placeholder="Surovina" required>
+    <input type="text" class="ingredient-name" list="ingredientSuggestions" value="${escapeHtml(ingredient.name || "")}" placeholder="Surovina" required>
     <input type="number" class="ingredient-amount" min="0" step="0.001" value="${ingredient.amount ?? ""}" placeholder="Množstvo" required>
     <input type="text" class="ingredient-unit" value="${escapeHtml(ingredient.unit || "kg")}" placeholder="Jednotka" required>
     <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
