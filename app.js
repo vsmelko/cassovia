@@ -1,6 +1,11 @@
+const STORAGE_KEY = "cassovia.customRecipes.v1";
+
 const state = {
+  baseRecipes: [],
+  customRecipes: [],
   recipes: [],
   selected: new Map(),
+  editingRecipeId: null,
 };
 
 const elements = {
@@ -14,6 +19,15 @@ const elements = {
   clearAll: document.querySelector("#clearAll"),
   printList: document.querySelector("#printList"),
   excelList: document.querySelector("#excelList"),
+  recipeForm: document.querySelector("#recipeForm"),
+  recipeFormTitle: document.querySelector("#recipeFormTitle"),
+  recipeId: document.querySelector("#recipeId"),
+  recipeName: document.querySelector("#recipeName"),
+  recipeCode: document.querySelector("#recipeCode"),
+  recipePortions: document.querySelector("#recipePortions"),
+  ingredientRows: document.querySelector("#ingredientRows"),
+  addIngredient: document.querySelector("#addIngredient"),
+  cancelRecipeEdit: document.querySelector("#cancelRecipeEdit"),
 };
 
 function formatAmount(value) {
@@ -23,8 +37,33 @@ function formatAmount(value) {
   return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
 }
 
+function normalizeAmount(value) {
+  return Number(String(value).replace(",", ".")) || 0;
+}
+
+function createId(value) {
+  const slug = String(value)
+    .toLocaleLowerCase("sk")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 70);
+  return `custom-${slug || "recept"}-${Date.now().toString(36)}`;
+}
+
+function cloneRecipe(recipe) {
+  return {
+    ...recipe,
+    ingredients: recipe.ingredients.map((ingredient) => ({ ...ingredient })),
+  };
+}
+
 function recipeMeta(recipe) {
-  return recipe.recipeCode ? `Strana receptu ${recipe.recipeCode}` : "Strana receptu nezadaná";
+  const code = recipe.recipeCode ? `Strana receptu ${recipe.recipeCode}` : "Strana receptu nezadaná";
+  const hasLocalOverride = state.customRecipes.some((item) => item.id === recipe.id);
+  const origin = recipe.isCustom ? "vlastný recept" : hasLocalOverride ? "upravený recept" : "import";
+  return `${code} | ${origin}`;
 }
 
 function selectedMeta(recipe) {
@@ -32,9 +71,41 @@ function selectedMeta(recipe) {
   return `${code} | ${recipe.ingredients.length} potravín`;
 }
 
+function refreshRecipes() {
+  const customById = new Map(state.customRecipes.map((recipe) => [recipe.id, recipe]));
+  state.recipes = state.baseRecipes
+    .map((recipe) => customById.get(recipe.id) || recipe)
+    .concat(state.customRecipes.filter((recipe) => !state.baseRecipes.some((base) => base.id === recipe.id)))
+    .sort((a, b) => a.name.localeCompare(b.name, "sk"));
+}
+
+function loadCustomRecipes() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("Custom recipes could not be loaded", error);
+    return [];
+  }
+}
+
+function saveCustomRecipes() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.customRecipes));
+}
+
+function updateStats() {
+  const editedBaseCount = state.customRecipes.filter((recipe) => !recipe.isCustom).length;
+  const customCount = state.customRecipes.filter((recipe) => recipe.isCustom).length;
+  const parts = [`${state.recipes.length} jedál`];
+  if (customCount) parts.push(`${customCount} vlastných`);
+  if (editedBaseCount) parts.push(`${editedBaseCount} upravených`);
+  elements.stats.textContent = parts.join(" | ");
+}
+
 function addRecipe(recipe) {
   if (!state.selected.has(recipe.id)) {
-    state.selected.set(recipe.id, { recipe, people: recipe.basePortions });
+    const workingRecipe = cloneRecipe(recipe);
+    state.selected.set(recipe.id, { recipe: workingRecipe, people: 1 });
   }
   renderSelected();
   renderShopping();
@@ -79,11 +150,10 @@ function renderResults() {
     return;
   }
 
-  const recipes = state.recipes
-    .filter((recipe) => {
-      const haystack = `${recipe.name} ${recipe.recipeCode || ""}`.toLocaleLowerCase("sk");
-      return !query || haystack.includes(query);
-    });
+  const recipes = state.recipes.filter((recipe) => {
+    const haystack = `${recipe.name} ${recipe.recipeCode || ""}`.toLocaleLowerCase("sk");
+    return !query || haystack.includes(query);
+  });
   const limit = isMobile ? mobileSearchLimit : query ? desktopSearchLimit : desktopInitialLimit;
   const visibleRecipes = recipes.slice(0, limit);
 
@@ -92,15 +162,18 @@ function renderResults() {
     ? `Nájdené jedlá: ${recipes.length} z ${state.recipes.length}${recipes.length > visibleRecipes.length ? ` | zobrazených ${visibleRecipes.length}` : ""}`
     : `Všetky jedlá: ${state.recipes.length} | zobrazených ${visibleRecipes.length}`;
   visibleRecipes.forEach((recipe) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "result-item";
-    button.innerHTML = `
-      <span class="result-name">${recipe.name}</span>
-      <span class="result-meta">${recipeMeta(recipe)}</span>
+    const item = document.createElement("div");
+    item.className = "result-item";
+    item.innerHTML = `
+      <button type="button" class="result-select">
+        <span class="result-name">${escapeHtml(recipe.name)}</span>
+        <span class="result-meta">${escapeHtml(recipeMeta(recipe))}</span>
+      </button>
+      <button type="button" class="edit-recipe-btn">Upraviť</button>
     `;
-    button.addEventListener("click", () => addRecipe(recipe));
-    elements.results.appendChild(button);
+    item.querySelector(".result-select").addEventListener("click", () => addRecipe(recipe));
+    item.querySelector(".edit-recipe-btn").addEventListener("click", () => startRecipeEdit(recipe));
+    elements.results.appendChild(item);
   });
 }
 
@@ -117,24 +190,75 @@ function renderSelected() {
     row.innerHTML = `
       <div class="selected-main">
         <div class="selected-title-row">
-          <div class="selected-title">${recipe.name}</div>
+          <div class="selected-title">${escapeHtml(recipe.name)}</div>
           <button type="button" class="remove-btn" aria-label="Odstrániť">×</button>
         </div>
-        <span class="selected-meta">${selectedMeta(recipe)}</span>
+        <span class="selected-meta">${escapeHtml(selectedMeta(recipe))}</span>
+        <details class="selected-ingredients">
+          <summary>Upraviť len pre tento výpočet</summary>
+          <div class="temporary-ingredients"></div>
+        </details>
       </div>
       <label class="people-field">
-        <span>Počet ľudí</span>
-        <input type="number" min="0" step="1" value="${people}" aria-label="Počet ľudí pre ${recipe.name}">
+        <span>Porcie/osoby</span>
+        <input type="number" min="0" step="1" value="${people}" aria-label="Počet porcií alebo osôb pre ${escapeHtml(recipe.name)}">
       </label>
     `;
-    const input = row.querySelector("input");
-    input.addEventListener("input", () => {
-      state.selected.get(recipe.id).people = Number(input.value) || 0;
+
+    const selectedEntry = state.selected.get(recipe.id);
+    row.querySelector(".people-field input").addEventListener("input", (event) => {
+      selectedEntry.people = Number(event.target.value) || 0;
       renderShopping();
     });
-    row.querySelector("button").addEventListener("click", () => removeRecipe(recipe.id));
+    row.querySelector(".remove-btn").addEventListener("click", () => removeRecipe(recipe.id));
+    renderTemporaryIngredientRows(row.querySelector(".temporary-ingredients"), selectedEntry);
     elements.selectedList.appendChild(row);
   });
+}
+
+function renderTemporaryIngredientRows(container, selectedEntry) {
+  container.innerHTML = "";
+  selectedEntry.recipe.ingredients.forEach((ingredient, index) => {
+    const row = document.createElement("div");
+    row.className = "temporary-row";
+    row.innerHTML = `
+      <input type="text" value="${escapeHtml(ingredient.name)}" aria-label="Potravina">
+      <input type="number" min="0" step="0.001" value="${ingredient.perPerson}" aria-label="Množstvo na 1 porciu">
+      <input type="text" value="${escapeHtml(ingredient.unit)}" aria-label="Jednotka">
+      <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
+    `;
+    const inputs = row.querySelectorAll("input");
+    inputs[0].addEventListener("input", () => {
+      ingredient.name = inputs[0].value.trim();
+      renderShopping();
+    });
+    inputs[1].addEventListener("input", () => {
+      ingredient.perPerson = normalizeAmount(inputs[1].value);
+      ingredient.amount = ingredient.perPerson * (selectedEntry.people || 1);
+      renderShopping();
+    });
+    inputs[2].addEventListener("input", () => {
+      ingredient.unit = inputs[2].value.trim();
+      renderShopping();
+    });
+    row.querySelector("button").addEventListener("click", () => {
+      selectedEntry.recipe.ingredients.splice(index, 1);
+      renderSelected();
+      renderShopping();
+    });
+    container.appendChild(row);
+  });
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "add-temporary";
+  addButton.textContent = "Pridať surovinu len sem";
+  addButton.addEventListener("click", () => {
+    selectedEntry.recipe.ingredients.push({ name: "", amount: 0, perPerson: 0, unit: "kg" });
+    renderSelected();
+    renderShopping();
+  });
+  container.appendChild(addButton);
 }
 
 function renderExportSummary() {
@@ -155,7 +279,7 @@ function renderExportSummary() {
           <th>Jednotka</th>
         </tr>
         <tr>
-          <th>Počet ľudí</th>
+          <th>Porcie/osoby</th>
           ${matrix.meals.map((meal) => `<th>${escapeHtml(meal.people)}</th>`).join("")}
           <th></th>
           <th></th>
@@ -185,6 +309,7 @@ function collectShoppingList() {
   const totals = new Map();
   state.selected.forEach(({ recipe, people }) => {
     recipe.ingredients.forEach((ingredient) => {
+      if (!ingredient.name || !ingredient.unit) return;
       const key = `${ingredient.name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
       const current = totals.get(key) || { name: ingredient.name, unit: ingredient.unit, amount: 0 };
       current.amount += ingredient.perPerson * people;
@@ -200,6 +325,7 @@ function collectExportMatrix() {
 
   meals.forEach((meal, mealIndex) => {
     meal.ingredients.forEach((ingredient) => {
+      if (!ingredient.name || !ingredient.unit) return;
       const key = `${ingredient.name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
       const row = rowMap.get(key) || {
         name: ingredient.name,
@@ -232,12 +358,111 @@ function renderShopping() {
   rows.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${item.name}</td>
+      <td>${escapeHtml(item.name)}</td>
       <td>${formatAmount(item.amount)}</td>
-      <td>${item.unit}</td>
+      <td>${escapeHtml(item.unit)}</td>
     `;
     elements.shoppingBody.appendChild(row);
   });
+}
+
+function addIngredientFormRow(ingredient = {}) {
+  const row = document.createElement("div");
+  row.className = "ingredient-form-row";
+  row.innerHTML = `
+    <input type="text" class="ingredient-name" value="${escapeHtml(ingredient.name || "")}" placeholder="Surovina" required>
+    <input type="number" class="ingredient-amount" min="0" step="0.001" value="${ingredient.amount ?? ""}" placeholder="Množstvo" required>
+    <input type="text" class="ingredient-unit" value="${escapeHtml(ingredient.unit || "kg")}" placeholder="Jednotka" required>
+    <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
+  `;
+  row.querySelector("button").addEventListener("click", () => {
+    row.remove();
+    if (!elements.ingredientRows.children.length) addIngredientFormRow();
+  });
+  elements.ingredientRows.appendChild(row);
+}
+
+function resetRecipeForm() {
+  state.editingRecipeId = null;
+  elements.recipeForm.reset();
+  elements.recipeId.value = "";
+  elements.recipeFormTitle.textContent = "Nový recept";
+  elements.cancelRecipeEdit.hidden = true;
+  elements.ingredientRows.innerHTML = "";
+  elements.recipePortions.value = "1";
+  addIngredientFormRow();
+}
+
+function startRecipeEdit(recipe) {
+  state.editingRecipeId = recipe.id;
+  elements.recipeFormTitle.textContent = "Upraviť recept";
+  elements.recipeId.value = recipe.id;
+  elements.recipeName.value = recipe.name;
+  elements.recipeCode.value = recipe.recipeCode || "";
+  elements.recipePortions.value = recipe.basePortions || 1;
+  elements.cancelRecipeEdit.hidden = false;
+  elements.ingredientRows.innerHTML = "";
+  recipe.ingredients.forEach((ingredient) => {
+    addIngredientFormRow({
+      name: ingredient.name,
+      amount: ingredient.amount || ingredient.perPerson * (recipe.basePortions || 1),
+      unit: ingredient.unit,
+    });
+  });
+  elements.recipeName.focus();
+}
+
+function collectRecipeFormData() {
+  const basePortions = Math.max(1, normalizeAmount(elements.recipePortions.value));
+  const ingredients = [...elements.ingredientRows.querySelectorAll(".ingredient-form-row")]
+    .map((row) => {
+      const name = row.querySelector(".ingredient-name").value.trim();
+      const amount = normalizeAmount(row.querySelector(".ingredient-amount").value);
+      const unit = row.querySelector(".ingredient-unit").value.trim();
+      return {
+        name,
+        amount,
+        perPerson: amount / basePortions,
+        unit,
+      };
+    })
+    .filter((ingredient) => ingredient.name && ingredient.unit && ingredient.amount > 0);
+
+  return {
+    id: elements.recipeId.value || createId(elements.recipeName.value),
+    name: elements.recipeName.value.trim(),
+    basePortions,
+    recipeCode: elements.recipeCode.value.trim(),
+    netto: "",
+    source: { source: "Vlastné" },
+    ingredients,
+  };
+}
+
+function saveRecipe(event) {
+  event.preventDefault();
+  const recipe = collectRecipeFormData();
+  if (!recipe.name || !recipe.ingredients.length) return;
+
+  const baseRecipe = state.baseRecipes.find((item) => item.id === recipe.id);
+  recipe.isCustom = !baseRecipe;
+  if (baseRecipe) {
+    recipe.source = baseRecipe.source;
+    recipe.netto = baseRecipe.netto;
+  }
+
+  const existingIndex = state.customRecipes.findIndex((item) => item.id === recipe.id);
+  if (existingIndex >= 0) {
+    state.customRecipes[existingIndex] = recipe;
+  } else {
+    state.customRecipes.push(recipe);
+  }
+
+  saveCustomRecipes();
+  refreshRecipes();
+  updateStats();
+  renderResults();
+  resetRecipeForm();
 }
 
 function printShoppingList() {
@@ -253,7 +478,7 @@ function saveShoppingListForExcel() {
   const matrix = collectExportMatrix();
   const lines = [
     ["Potravina", ...matrix.meals.map((meal) => meal.name), "Spolu", "Jednotka"],
-    ["Počet ľudí", ...matrix.meals.map((meal) => meal.people), "", ""],
+    ["Porcie/osoby", ...matrix.meals.map((meal) => meal.people), "", ""],
     ["Strana receptu", ...matrix.meals.map((meal) => meal.recipeCode || "-"), "", ""],
     [],
     ...matrix.rows.map((row) => [
@@ -280,11 +505,14 @@ async function loadData() {
   if (!payload) {
     throw new Error("Missing recipe data");
   }
-  state.recipes = payload.recipes;
-  elements.stats.textContent = `${payload.recipes.length} jedál`;
+  state.baseRecipes = payload.recipes;
+  state.customRecipes = loadCustomRecipes();
+  refreshRecipes();
+  updateStats();
   renderResults();
   renderSelected();
   renderShopping();
+  resetRecipeForm();
 }
 
 elements.search.addEventListener("input", renderResults);
@@ -296,6 +524,9 @@ elements.clearAll.addEventListener("click", () => {
 });
 elements.printList.addEventListener("click", printShoppingList);
 elements.excelList.addEventListener("click", saveShoppingListForExcel);
+elements.recipeForm.addEventListener("submit", saveRecipe);
+elements.addIngredient.addEventListener("click", () => addIngredientFormRow());
+elements.cancelRecipeEdit.addEventListener("click", resetRecipeForm);
 
 loadData().catch((error) => {
   elements.stats.textContent = "Dáta sa nepodarilo načítať";

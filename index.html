@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260717-7">
+    <link rel="stylesheet" href="styles.css?v=20260717-8">
   </head>
   <body>
     <main class="app-shell">
@@ -27,6 +27,44 @@
         <input id="recipeSearch" type="search" autocomplete="off" placeholder="Začni písať názov jedla alebo číslo receptu">
         <div class="result-count" id="resultCount"></div>
         <div class="results" id="results"></div>
+      </section>
+
+      <section class="recipe-editor-panel">
+        <div class="panel-heading">
+          <h2 id="recipeFormTitle">Nový recept</h2>
+          <button id="cancelRecipeEdit" type="button" hidden>Zrušiť úpravu</button>
+        </div>
+        <form id="recipeForm" class="recipe-form">
+          <input id="recipeId" type="hidden">
+          <div class="recipe-fields">
+            <label>
+              <span>Názov receptu</span>
+              <input id="recipeName" type="text" autocomplete="off" required>
+            </label>
+            <label>
+              <span>Strana</span>
+              <input id="recipeCode" type="text" autocomplete="off">
+            </label>
+            <label>
+              <span>Základ porcií</span>
+              <input id="recipePortions" type="number" min="1" step="1" value="1" required>
+            </label>
+          </div>
+          <div class="ingredients-heading">
+            <span>Suroviny</span>
+            <button id="addIngredient" type="button">Pridať surovinu</button>
+          </div>
+          <div class="ingredient-grid-head">
+            <span>Surovina</span>
+            <span>Množstvo</span>
+            <span>Jednotka</span>
+            <span></span>
+          </div>
+          <div id="ingredientRows" class="ingredient-rows"></div>
+          <div class="form-actions">
+            <button type="submit" class="primary-action">Uložiť recept</button>
+          </div>
+        </form>
       </section>
 
       <section class="workspace">
@@ -63,7 +101,7 @@
       </section>
     </main>
 
-    <script src="data/recipes.js?v=20260717-7"></script>
-    <script src="app.js?v=20260717-7"></script>
+    <script src="data/recipes.js?v=20260717-8"></script>
+    <script src="app.js?v=20260717-8"></script>
   </body>
 </html>
