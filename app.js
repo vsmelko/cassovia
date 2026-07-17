@@ -4,6 +4,7 @@ const state = {
   baseRecipes: [],
   customRecipes: [],
   recipes: [],
+  ingredientSuggestions: [],
   selected: new Map(),
   editingRecipeId: null,
 };
@@ -27,7 +28,6 @@ const elements = {
   recipeName: document.querySelector("#recipeName"),
   recipeCode: document.querySelector("#recipeCode"),
   ingredientRows: document.querySelector("#ingredientRows"),
-  ingredientSuggestions: document.querySelector("#ingredientSuggestions"),
   addIngredient: document.querySelector("#addIngredient"),
   cancelRecipeEdit: document.querySelector("#cancelRecipeEdit"),
 };
@@ -41,6 +41,13 @@ function formatAmount(value) {
 
 function normalizeAmount(value) {
   return Number(String(value).replace(",", ".")) || 0;
+}
+
+function normalizeSearch(value) {
+  return String(value)
+    .toLocaleLowerCase("sk")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function createId(value) {
@@ -91,24 +98,58 @@ function renderIngredientSuggestions() {
       if (!names.has(key)) names.set(key, name);
     });
   });
-
-  elements.ingredientSuggestions.innerHTML = [...names.values()]
-    .sort((a, b) => a.localeCompare(b, "sk"))
-    .map((name) => `<option value="${escapeHtml(name)}"></option>`)
-    .join("");
+  state.ingredientSuggestions = [...names.values()].sort((a, b) => a.localeCompare(b, "sk"));
 }
 
 function enableIngredientAutocomplete(input) {
-  input.removeAttribute("list");
-  input.addEventListener("input", () => {
-    if (input.value.trim()) {
-      input.setAttribute("list", "ingredientSuggestions");
-    } else {
-      input.removeAttribute("list");
+  const menu = document.createElement("div");
+  menu.className = "ingredient-suggestion-menu";
+  menu.hidden = true;
+  input.insertAdjacentElement("afterend", menu);
+
+  const hideMenu = () => {
+    menu.hidden = true;
+    menu.innerHTML = "";
+  };
+
+  const showMatches = () => {
+    const query = normalizeSearch(input.value.trim());
+    if (!query) {
+      hideMenu();
+      return;
     }
+
+    const matches = (state.ingredientSuggestions || [])
+      .filter((name) => normalizeSearch(name).includes(query))
+      .slice(0, 8);
+
+    if (!matches.length) {
+      hideMenu();
+      return;
+    }
+
+    menu.innerHTML = matches
+      .map((name) => `<button type="button" class="ingredient-suggestion-option">${escapeHtml(name)}</button>`)
+      .join("");
+    menu.hidden = false;
+  };
+
+  input.addEventListener("input", () => {
+    showMatches();
   });
   input.addEventListener("blur", () => {
-    input.removeAttribute("list");
+    window.setTimeout(hideMenu, 120);
+  });
+  menu.addEventListener("mousedown", (event) => {
+    event.preventDefault();
+  });
+  menu.addEventListener("click", (event) => {
+    const option = event.target.closest(".ingredient-suggestion-option");
+    if (!option) return;
+    input.value = option.textContent;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    hideMenu();
+    input.focus();
   });
 }
 

@@ -300,6 +300,11 @@ input[type="text"]:focus {
   align-items: center;
 }
 
+.ingredient-form-row,
+.temporary-row {
+  position: relative;
+}
+
 .ingredient-grid-head {
   color: var(--muted);
   font-size: 12px;
@@ -310,6 +315,43 @@ input[type="text"]:focus {
 .ingredient-rows {
   display: grid;
   gap: 8px;
+}
+
+.ingredient-suggestion-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 70;
+  display: grid;
+  width: min(360px, 100%);
+  max-height: 240px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(23, 33, 38, 0.16);
+}
+
+.ingredient-suggestion-menu[hidden] {
+  display: none;
+}
+
+.ingredient-suggestion-option {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  font-weight: 600;
+}
+
+.ingredient-suggestion-option:hover {
+  background: var(--accent-soft);
+  box-shadow: none;
+  transform: none;
 }
 
 .form-actions {
