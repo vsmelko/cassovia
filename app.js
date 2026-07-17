@@ -171,7 +171,7 @@ function renderResults() {
         <span class="result-name">${escapeHtml(recipe.name)}</span>
         <span class="result-meta">${escapeHtml(recipeMeta(recipe))}</span>
       </button>
-      <button type="button" class="edit-recipe-btn">Upraviť</button>
+      <button type="button" class="edit-recipe-btn" aria-label="Upraviť recept" title="Upraviť recept">✎</button>
     `;
     item.querySelector(".result-select").addEventListener("click", () => addRecipe(recipe));
     item.querySelector(".edit-recipe-btn").addEventListener("click", () => startRecipeEdit(recipe));

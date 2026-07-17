@@ -201,8 +201,14 @@ input[type="text"]:focus {
 }
 
 .edit-recipe-btn {
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
   align-self: center;
-  white-space: nowrap;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .result-name {
@@ -576,7 +582,7 @@ tbody tr:hover {
   }
 
   .edit-recipe-btn {
-    justify-self: start;
+    justify-self: end;
   }
 
   .recipe-fields,
