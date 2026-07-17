@@ -50,6 +50,58 @@ function normalizeSearch(value) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function normalizeIngredientKey(value) {
+  return normalizeSearch(value)
+    .replace(/[^a-z0-9%]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function ingredientAlias(alias, canonical) {
+  return [normalizeIngredientKey(alias), canonical];
+}
+
+const INGREDIENT_ALIASES = new Map([
+  ingredientAlias("Cest.- ryza", "Cest. - ry\u017ea"),
+  ingredientAlias("Cest. - ryza", "Cest. - ry\u017ea"),
+  ingredientAlias("Cest.-kolienka", "Cest. - kolienka"),
+  ingredientAlias("Cest. - kolienka", "Cest. - kolienka"),
+  ingredientAlias("Cestov. - kolienka", "Cest. - kolienka"),
+  ingredientAlias("Cest.- fliacky", "Cest. - flia\u010dky"),
+  ingredientAlias("Cest. - fliacky", "Cest. - flia\u010dky"),
+  ingredientAlias("Cest. - PENNE", "Cest. - penne"),
+  ingredientAlias("Cest. - penne", "Cest. - penne"),
+  ingredientAlias("Cestov.- rez.siroke", "Cest. - rez.\u0161irok\u00e9"),
+  ingredientAlias("Cest. - rez.siroke", "Cest. - rez.\u0161irok\u00e9"),
+  ingredientAlias("Cestov. - nitovky", "Cest. - ni\u0165ovky"),
+  ingredientAlias("Cest. - nitovky", "Cest. - ni\u0165ovky"),
+  ingredientAlias("Bravc.plece- mlete", "Brav\u010dov\u00e9 plece mlet\u00e9"),
+  ingredientAlias("Bravc.plece-mlete", "Brav\u010dov\u00e9 plece mlet\u00e9"),
+  ingredientAlias("Bravc.plece", "Brav\u010dov\u00e9 plece"),
+  ingredientAlias("Bravcove plece", "Brav\u010dov\u00e9 plece"),
+  ingredientAlias("Bravc.stehno", "Brav\u010dov\u00e9 stehno"),
+  ingredientAlias("Bravcove stehno", "Brav\u010dov\u00e9 stehno"),
+  ingredientAlias("Bravc.kare", "Brav\u010dov\u00e9 kar\u00e9"),
+  ingredientAlias("Bravcove kare", "Brav\u010dov\u00e9 kar\u00e9"),
+  ingredientAlias("Bobk.list", "Bobkov\u00fd list"),
+  ingredientAlias("Bobkovy list", "Bobkov\u00fd list"),
+  ingredientAlias("Paradajk.omacka", "Paradajkov\u00e1 om\u00e1\u010dka"),
+  ingredientAlias("Paradajk. omacka", "Paradajkov\u00e1 om\u00e1\u010dka"),
+  ingredientAlias("Paradajkova omacka", "Paradajkov\u00e1 om\u00e1\u010dka"),
+  ingredientAlias("Majoran", "Major\u00e1nka"),
+  ingredientAlias("Majoranka", "Major\u00e1nka"),
+  ingredientAlias("Cibulka zelena", "Zelen\u00e1 cibu\u013eka"),
+  ingredientAlias("Zelena cibulka", "Zelen\u00e1 cibu\u013eka"),
+  ingredientAlias("Krkovicka udena", "\u00daden\u00e1 krkovi\u010dka"),
+  ingredientAlias("Udena krkovicka", "\u00daden\u00e1 krkovi\u010dka"),
+  ingredientAlias("Cukor", "Cukor kry\u0161t\u00e1l"),
+  ingredientAlias("Cukor krystal", "Cukor kry\u0161t\u00e1l"),
+]);
+
+function canonicalIngredientName(name) {
+  return INGREDIENT_ALIASES.get(normalizeIngredientKey(name)) || name;
+}
+
 function createId(value) {
   const slug = String(value)
     .toLocaleLowerCase("sk")
@@ -92,7 +144,7 @@ function renderIngredientSuggestions() {
   const names = new Map();
   state.recipes.forEach((recipe) => {
     recipe.ingredients.forEach((ingredient) => {
-      const name = ingredient.name?.trim();
+      const name = canonicalIngredientName(ingredient.name?.trim());
       if (!name) return;
       const key = name.toLocaleLowerCase("sk");
       if (!names.has(key)) names.set(key, name);
@@ -389,8 +441,9 @@ function collectShoppingList() {
   state.selected.forEach(({ recipe, people }) => {
     recipe.ingredients.forEach((ingredient) => {
       if (!ingredient.name || !ingredient.unit) return;
-      const key = `${ingredient.name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
-      const current = totals.get(key) || { name: ingredient.name, unit: ingredient.unit, amount: 0 };
+      const name = canonicalIngredientName(ingredient.name);
+      const key = `${name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
+      const current = totals.get(key) || { name, unit: ingredient.unit, amount: 0 };
       current.amount += ingredient.perPerson * people;
       totals.set(key, current);
     });
@@ -405,9 +458,10 @@ function collectExportMatrix() {
   meals.forEach((meal, mealIndex) => {
     meal.ingredients.forEach((ingredient) => {
       if (!ingredient.name || !ingredient.unit) return;
-      const key = `${ingredient.name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
+      const name = canonicalIngredientName(ingredient.name);
+      const key = `${name.toLocaleLowerCase("sk")}__${ingredient.unit}`;
       const row = rowMap.get(key) || {
-        name: ingredient.name,
+        name,
         unit: ingredient.unit,
         mealAmounts: Array(meals.length).fill(0),
         total: 0,
