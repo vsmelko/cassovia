@@ -61,15 +61,14 @@ function cloneRecipe(recipe) {
 }
 
 function recipeMeta(recipe) {
-  const code = recipe.recipeCode ? `Strana receptu ${recipe.recipeCode}` : "Strana receptu nezadaná";
+  const code = recipe.recipeCode ? recipe.recipeCode : "";
   const hasLocalOverride = state.customRecipes.some((item) => item.id === recipe.id);
   const origin = recipe.isCustom ? "vlastný recept" : hasLocalOverride ? "upravený recept" : "import";
-  return `${code} | ${origin}`;
+  return [code, origin].filter(Boolean).join(" | ");
 }
 
 function selectedMeta(recipe) {
-  const code = recipe.recipeCode ? `strana ${recipe.recipeCode}` : "bez strany";
-  return `${code} | ${recipe.ingredients.length} potravín`;
+  return [recipe.recipeCode, `${recipe.ingredients.length} potravín`].filter(Boolean).join(" | ");
 }
 
 function refreshRecipes() {
@@ -286,7 +285,7 @@ function renderExportSummary() {
           <th></th>
         </tr>
         <tr>
-          <th>Strana receptu</th>
+          <th>Strana</th>
           ${matrix.meals.map((meal) => `<th>${escapeHtml(meal.recipeCode || "-")}</th>`).join("")}
           <th></th>
           <th></th>
@@ -493,7 +492,7 @@ function saveShoppingListForExcel() {
   const lines = [
     ["Potravina", ...matrix.meals.map((meal) => meal.name), "Spolu", "Jednotka"],
     ["Porcie/osoby", ...matrix.meals.map((meal) => meal.people), "", ""],
-    ["Strana receptu", ...matrix.meals.map((meal) => meal.recipeCode || "-"), "", ""],
+    ["Strana", ...matrix.meals.map((meal) => meal.recipeCode || "-"), "", ""],
     [],
     ...matrix.rows.map((row) => [
       row.name,
