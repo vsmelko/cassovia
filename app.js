@@ -98,6 +98,20 @@ function renderIngredientSuggestions() {
     .join("");
 }
 
+function enableIngredientAutocomplete(input) {
+  input.removeAttribute("list");
+  input.addEventListener("input", () => {
+    if (input.value.trim()) {
+      input.setAttribute("list", "ingredientSuggestions");
+    } else {
+      input.removeAttribute("list");
+    }
+  });
+  input.addEventListener("blur", () => {
+    input.removeAttribute("list");
+  });
+}
+
 function loadCustomRecipes() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -241,12 +255,13 @@ function renderTemporaryIngredientRows(container, selectedEntry) {
     const row = document.createElement("div");
     row.className = "temporary-row";
     row.innerHTML = `
-      <input type="text" list="ingredientSuggestions" value="${escapeHtml(ingredient.name)}" aria-label="Potravina">
+      <input type="text" value="${escapeHtml(ingredient.name)}" aria-label="Potravina">
       <input type="number" min="0" step="0.001" value="${ingredient.perPerson}" aria-label="Množstvo na 1 porciu">
       <input type="text" value="${escapeHtml(ingredient.unit)}" aria-label="Jednotka">
       <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
     `;
     const inputs = row.querySelectorAll("input");
+    enableIngredientAutocomplete(inputs[0]);
     inputs[0].addEventListener("input", () => {
       ingredient.name = inputs[0].value.trim();
       renderShopping();
@@ -393,7 +408,7 @@ function addIngredientFormRow(ingredient = {}) {
   const row = document.createElement("div");
   row.className = "ingredient-form-row";
   row.innerHTML = `
-    <input type="text" class="ingredient-name" list="ingredientSuggestions" value="${escapeHtml(ingredient.name || "")}" placeholder="Surovina" required>
+    <input type="text" class="ingredient-name" value="${escapeHtml(ingredient.name || "")}" placeholder="Surovina" required>
     <input type="number" class="ingredient-amount" min="0" step="0.001" value="${ingredient.amount ?? ""}" placeholder="Množstvo" required>
     <input type="text" class="ingredient-unit" value="${escapeHtml(ingredient.unit || "kg")}" placeholder="Jednotka" required>
     <button type="button" class="remove-small" aria-label="Odstrániť surovinu">×</button>
@@ -402,6 +417,7 @@ function addIngredientFormRow(ingredient = {}) {
     row.remove();
     if (!elements.ingredientRows.children.length) addIngredientFormRow();
   });
+  enableIngredientAutocomplete(row.querySelector(".ingredient-name"));
   elements.ingredientRows.appendChild(row);
 }
 
